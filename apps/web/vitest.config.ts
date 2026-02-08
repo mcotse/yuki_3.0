@@ -10,6 +10,7 @@ export default defineConfig({
       ["convex/**/*.test.ts", "edge-runtime"],
       ["**/*.test.tsx", "jsdom"],
     ],
+    exclude: ["e2e/**", "node_modules/**"],
     setupFiles: ["./vitest.setup.ts"],
   },
   resolve: {
