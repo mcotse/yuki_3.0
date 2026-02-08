@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@serwist/next": "^9.5.5",
@@ -18,6 +19,7 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@serwist/precaching": "^9.5.5",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
