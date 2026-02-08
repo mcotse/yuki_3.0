@@ -15,6 +15,7 @@
     "@serwist/next": "^9.5.5",
     "@yuki/types": "workspace:*",
     "convex": "^1.31.7",
+    "idb": "^8.0.3",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
@@ -33,6 +34,7 @@
     "convex-test": "^0.0.41",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^28.0.0",
     "serwist": "^9.5.5",
     "tailwindcss": "^4",
