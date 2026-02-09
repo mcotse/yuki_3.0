@@ -24,10 +24,10 @@ test.describe("All Clear State", () => {
         await clerkPage.waitForTimeout(500);
 
         // Wait for either next hero card or all clear
-        await clerkPage.waitForSelector(
-          'button:has-text("Confirm"), text="All clear!"',
-          { timeout: 10_000 }
-        );
+        await clerkPage
+          .locator('button:has-text("Confirm"), :text("All clear!")')
+          .first()
+          .waitFor({ timeout: 10_000 });
       } else {
         hasMore = false;
       }

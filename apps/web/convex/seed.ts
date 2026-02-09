@@ -108,7 +108,7 @@ export const seedDemoData = internalMutation({
 
 /**
  * Public seed mutation for E2E testing.
- * Seeds demo data + generates today's instances.
+ * Seeds demo data + resets and regenerates today's instances.
  */
 export const seedForTest = mutation({
   args: {},
@@ -116,6 +116,22 @@ export const seedForTest = mutation({
     await seedDemoDataHandler(ctx);
 
     const today = new Date().toISOString().split("T")[0];
+
+    // Delete existing instances for today so they can be regenerated fresh
+    const existing = await ctx.db
+      .query("dailyInstances")
+      .withIndex("by_date", (q) => q.eq("date", today))
+      .collect();
+    for (const inst of existing) {
+      await ctx.db.delete(inst._id);
+    }
+
+    // Also clear today's confirmation history
+    const history = await ctx.db.query("confirmationHistory").collect();
+    for (const h of history) {
+      await ctx.db.delete(h._id);
+    }
+
     await generateDailyInstancesHandler(ctx, today);
 
     return { ok: true as const, date: today };
