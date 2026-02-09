@@ -16,7 +16,7 @@ test.describe("Dashboard", () => {
     await expect(heroCard).toBeVisible();
 
     // Should have a Confirm button
-    await expect(clerkPage.locator("button", { hasText: "Confirm" })).toBeVisible();
+    await expect(clerkPage.locator("button", { hasText: "Confirm" }).first()).toBeVisible();
   });
 
   test("shows progress ring", async ({ clerkPage }) => {

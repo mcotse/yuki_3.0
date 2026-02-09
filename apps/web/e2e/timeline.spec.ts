@@ -14,9 +14,9 @@ test.describe("Timeline & Snooze (V3)", () => {
   test("timeline shows all seeded medications", async ({ clerkPage }) => {
     await waitForTimeline(clerkPage);
 
-    await expect(clerkPage.locator("text=Prednisolone")).toBeVisible();
-    await expect(clerkPage.locator("text=Galliprant")).toBeVisible();
-    await expect(clerkPage.locator("text=Fish Oil")).toBeVisible();
+    await expect(clerkPage.locator("text=Prednisolone").first()).toBeVisible({ timeout: 10_000 });
+    await expect(clerkPage.locator("text=Galliprant").first()).toBeVisible({ timeout: 10_000 });
+    await expect(clerkPage.locator("text=Fish Oil").first()).toBeVisible({ timeout: 10_000 });
   });
 
   test("timeline items show status pills", async ({ clerkPage }) => {
@@ -41,13 +41,13 @@ test.describe("Timeline & Snooze (V3)", () => {
     // Click the first timeline Confirm button (aria-label)
     await clerkPage.locator('button[aria-label="Confirm"]').first().click();
 
-    // Wait for progress to update
-    await clerkPage.waitForTimeout(1000);
-    const progressAfter = await clerkPage
-      .locator("text=/\\d+ \\/ \\d+|All done!/")
-      .textContent();
-
-    expect(progressAfter).not.toEqual(progressBefore);
+    // Wait for Convex mutation to propagate and progress to update
+    await expect(async () => {
+      const progressAfter = await clerkPage
+        .locator("text=/\\d+ \\/ \\d+|All done!/")
+        .textContent();
+      expect(progressAfter).not.toEqual(progressBefore);
+    }).toPass({ timeout: 10_000 });
   });
 
   test("snooze button shows duration options", async ({ clerkPage }) => {
@@ -71,11 +71,12 @@ test.describe("Timeline & Snooze (V3)", () => {
     // Choose 15 min snooze
     await clerkPage.locator("text=15 min").click();
 
-    // Wait for status update and check "Snoozed" pill appears
-    await expect(clerkPage.locator("text=Snoozed")).toBeVisible({ timeout: 5_000 });
+    // Wait for Convex mutation to propagate and check "Snoozed" pill appears
+    await expect(clerkPage.locator("text=Snoozed")).toBeVisible({ timeout: 10_000 });
   });
 
   test("confirm all medications reaches all-clear state", async ({ clerkPage }) => {
+    test.setTimeout(90_000); // 6 medications with Convex mutations
     await waitForTimeline(clerkPage);
 
     await confirmAllMedications(clerkPage);
