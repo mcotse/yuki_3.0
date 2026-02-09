@@ -2,15 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
-const tabs = [
+const baseTabs = [
   { href: "/dashboard", label: "Dashboard", icon: "\u25CF" },
   { href: "/history", label: "History", icon: "\u25F7" },
-  { href: "/settings", label: "Settings", icon: "\u2699" },
 ] as const;
+
+const adminTab = { href: "/admin", label: "Admin", icon: "\uD83D\uDEE1" } as const;
+
+const settingsTab = { href: "/settings", label: "Settings", icon: "\u2699" } as const;
 
 export function BottomTabs() {
   const pathname = usePathname();
+  const { isAdmin } = useCurrentUser();
+
+  const tabs = isAdmin
+    ? [...baseTabs, adminTab, settingsTab]
+    : [...baseTabs, settingsTab];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-surface-container bg-surface pb-[env(safe-area-inset-bottom)]">
