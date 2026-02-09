@@ -6,10 +6,11 @@ export async function generateDailyInstancesHandler(
   ctx: MutationCtx,
   date: string,
 ) {
-  // Check if instances already exist for this date
+  // Check if scheduled instances already exist for this date (ignore observations)
   const existing = await ctx.db
     .query("dailyInstances")
     .withIndex("by_date", (q) => q.eq("date", date))
+    .filter((q) => q.eq(q.field("isObservation"), false))
     .first();
 
   if (existing) return;
@@ -49,8 +50,8 @@ export const generateDailyInstances = internalMutation({
 // Enriched instance type for the client
 interface EnrichedInstance {
   _id: string;
-  itemId: string;
-  scheduleId: string;
+  itemId?: string;
+  scheduleId?: string;
   petId: string;
   date: string;
   scheduledHour: number;
@@ -68,11 +69,17 @@ interface EnrichedInstance {
   itemType: string;
   itemLocation?: string;
   conflictGroup?: string;
+  conflictWarning?: string;
 }
 
 export const getToday = query({
-  args: { date: v.string() },
-  handler: async (ctx, { date }) => {
+  args: {
+    date: v.string(),
+    now: v.optional(v.number()),
+  },
+  handler: async (ctx, { date, now: clientNow }) => {
+    const now = clientNow ?? Date.now();
+
     const rawInstances = await ctx.db
       .query("dailyInstances")
       .withIndex("by_date", (q) => q.eq("date", date))
@@ -81,11 +88,11 @@ export const getToday = query({
     // Enrich with item details
     const instances: EnrichedInstance[] = await Promise.all(
       rawInstances.map(async (inst) => {
-        const item = await ctx.db.get(inst.itemId);
+        const item = inst.itemId ? await ctx.db.get(inst.itemId) : null;
         return {
           _id: inst._id as unknown as string,
-          itemId: inst.itemId as unknown as string,
-          scheduleId: inst.scheduleId as unknown as string,
+          itemId: inst.itemId as unknown as string | undefined,
+          scheduleId: inst.scheduleId as unknown as string | undefined,
           petId: inst.petId as unknown as string,
           date: inst.date,
           scheduledHour: inst.scheduledHour,
@@ -114,22 +121,48 @@ export const getToday = query({
       return aMin - bMin;
     });
 
+    // Add conflict warnings
+    const CONFLICT_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+    for (const inst of instances) {
+      if (inst.status !== "pending" && !(inst.status === "snoozed" && inst.snoozedUntil && inst.snoozedUntil < now)) {
+        continue;
+      }
+      if (!inst.conflictGroup) continue;
+
+      const recentConflict = instances.find(
+        (other) =>
+          other._id !== inst._id &&
+          other.conflictGroup === inst.conflictGroup &&
+          other.status === "confirmed" &&
+          other.confirmedAt &&
+          now - other.confirmedAt < CONFLICT_WINDOW_MS
+      );
+
+      if (recentConflict) {
+        inst.conflictWarning = `Wait 5 min after ${recentConflict.itemName}`;
+      }
+    }
+
     // Compute progress
-    const done = instances.filter((i) => i.status === "confirmed").length;
+    const done = instances.filter((i) => i.status === "confirmed" && !i.isObservation).length;
     const total = instances.filter((i) => !i.isObservation).length;
 
-    // Compute hero item: first pending instance that is due or overdue
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    // Hero item: first pending or expired-snoozed instance that is due/overdue
+    const currentDate = new Date(now);
+    const currentMinutes = currentDate.getHours() * 60 + currentDate.getMinutes();
+
+    const isHeroEligible = (i: EnrichedInstance) =>
+      !i.isObservation &&
+      (i.status === "pending" ||
+        (i.status === "snoozed" && i.snoozedUntil !== undefined && i.snoozedUntil < now));
 
     const heroItem =
       instances.find(
         (i) =>
-          i.status === "pending" &&
-          !i.isObservation &&
+          isHeroEligible(i) &&
           i.scheduledHour * 60 + i.scheduledMinute <= currentMinutes
       ) ??
-      instances.find((i) => i.status === "pending" && !i.isObservation) ??
+      instances.find((i) => isHeroEligible(i)) ??
       null;
 
     return {
