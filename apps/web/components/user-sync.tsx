@@ -21,7 +21,8 @@ export function UserSync() {
         hasSynced.current = false;
       });
     }
-  }, [isAuthenticated, getOrCreate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   return null;
 }

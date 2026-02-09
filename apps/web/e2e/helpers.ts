@@ -75,3 +75,45 @@ export async function waitForDashboard(page: Page) {
   // Wait for either hero card or "All clear" to appear
   await page.locator('text="Right Now"').or(page.locator('text="All clear!"')).first().waitFor({ timeout: 15_000 });
 }
+
+/**
+ * Wait for timeline items to appear on the dashboard.
+ */
+export async function waitForTimeline(page: Page) {
+  await page.locator("text=Today's Schedule").waitFor({ timeout: 15_000 });
+}
+
+/**
+ * Confirm all medications one by one until all-clear state.
+ * Uses aria-label="Confirm" on timeline items and the hero card's "Confirm" button text.
+ */
+export async function confirmAllMedications(page: Page) {
+  let maxIterations = 10;
+  while (maxIterations > 0) {
+    const allClear = page.locator("text=All clear!");
+    if (await allClear.isVisible()) break;
+
+    // Try timeline inline Confirm buttons first (aria-label="Confirm")
+    const timelineConfirm = page.locator('button[aria-label="Confirm"]').first();
+    if (await timelineConfirm.isVisible()) {
+      await timelineConfirm.click();
+      await page.waitForSelector(
+        'button[aria-label="Confirm"], text="All clear!"',
+        { timeout: 10_000 }
+      );
+    } else {
+      // Fall back to hero card Confirm button (identified by text)
+      const heroConfirm = page.locator("button", { hasText: "Confirm" }).first();
+      if (await heroConfirm.isVisible()) {
+        await heroConfirm.click();
+        await page.waitForSelector(
+          'button[aria-label="Confirm"], button:has-text("Confirm"), text="All clear!"',
+          { timeout: 10_000 }
+        );
+      } else {
+        break;
+      }
+    }
+    maxIterations--;
+  }
+}

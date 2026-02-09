@@ -57,8 +57,8 @@ export default defineSchema({
 
   // Daily instances (the "did it happen" — one per item per schedule per day)
   dailyInstances: defineTable({
-    itemId: v.id("items"),
-    scheduleId: v.id("itemSchedules"),
+    itemId: v.optional(v.id("items")),
+    scheduleId: v.optional(v.id("itemSchedules")),
     petId: v.id("pets"),
     date: v.string(),
     scheduledHour: v.number(),
@@ -110,6 +110,16 @@ export default defineSchema({
     userId: v.id("users"),
     lastHeartbeat: v.number(),
     isOnline: v.boolean(),
+  })
+    .index("by_user", ["userId"]),
+
+  // Push notification subscriptions
+  pushSubscriptions: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    createdAt: v.number(),
   })
     .index("by_user", ["userId"]),
 });
