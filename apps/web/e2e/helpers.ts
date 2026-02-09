@@ -23,12 +23,14 @@ async function clerkSignIn(page: Page) {
 
   // Handle device-verification OTP screen if it appears
   const otpInput = page.locator('input[autocomplete="one-time-code"]');
-  const dashboard = page.locator('text="All clear!", text="Right Now"');
+  const dashboard = page.locator('text="All clear!"').or(page.locator('text="Right Now"'));
 
-  const which = await Promise.race([
-    otpInput.waitFor({ timeout: 10_000 }).then(() => "otp" as const),
-    dashboard.first().waitFor({ timeout: 10_000 }).then(() => "done" as const),
-  ]);
+  const otpPromise = otpInput.waitFor({ timeout: 10_000 }).then(() => "otp" as const);
+  const dashPromise = dashboard.first().waitFor({ timeout: 10_000 }).then(() => "done" as const);
+  // Suppress unhandled rejection from the losing promise
+  otpPromise.catch(() => {});
+  dashPromise.catch(() => {});
+  const which = await Promise.race([otpPromise, dashPromise]);
 
   if (which === "otp") {
     // Clerk uses a custom OTP input — click it then type digits
@@ -71,8 +73,5 @@ export async function seedTestData(page: Page) {
  */
 export async function waitForDashboard(page: Page) {
   // Wait for either hero card or "All clear" to appear
-  await page.waitForSelector(
-    'text="Right Now", text="All clear!"',
-    { timeout: 15_000 }
-  );
+  await page.locator('text="Right Now"').or(page.locator('text="All clear!"')).first().waitFor({ timeout: 15_000 });
 }

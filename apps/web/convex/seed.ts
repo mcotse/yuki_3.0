@@ -126,10 +126,16 @@ export const seedForTest = mutation({
       await ctx.db.delete(inst._id);
     }
 
-    // Also clear today's confirmation history
-    const history = await ctx.db.query("confirmationHistory").collect();
-    for (const h of history) {
-      await ctx.db.delete(h._id);
+    // Also clear today's confirmation history (scoped to today's instances only)
+    const instanceIds = new Set(existing.map((inst) => inst._id));
+    for (const instanceId of instanceIds) {
+      const history = await ctx.db
+        .query("confirmationHistory")
+        .withIndex("by_instance", (q) => q.eq("instanceId", instanceId))
+        .collect();
+      for (const h of history) {
+        await ctx.db.delete(h._id);
+      }
     }
 
     await generateDailyInstancesHandler(ctx, today);

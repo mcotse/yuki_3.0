@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useMutation, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
@@ -11,11 +11,14 @@ import { api } from "@/convex/_generated/api";
 export function UserSync() {
   const { isAuthenticated } = useConvexAuth();
   const getOrCreate = useMutation(api.users.getOrCreate);
+  const hasSynced = useRef(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !hasSynced.current) {
+      hasSynced.current = true;
       getOrCreate().catch(() => {
         // Silently ignore — user may already exist
+        hasSynced.current = false;
       });
     }
   }, [isAuthenticated, getOrCreate]);

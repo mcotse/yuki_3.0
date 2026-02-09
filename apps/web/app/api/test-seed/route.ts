@@ -9,8 +9,6 @@ export async function GET() {
   }
 
   try {
-    // seedDemoData is an internal mutation — we need a public wrapper.
-    // We'll create this in Task 4.
     await fetchMutation(api.seed.seedForTest);
     return NextResponse.json({ ok: true });
   } catch (error) {
