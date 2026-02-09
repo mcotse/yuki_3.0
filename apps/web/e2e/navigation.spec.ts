@@ -3,6 +3,7 @@ import { test, expect } from "./helpers";
 test.describe("Navigation", () => {
   test("bottom tabs navigate between pages", async ({ clerkPage }) => {
     await clerkPage.goto("/dashboard");
+    await clerkPage.locator("nav").waitFor({ timeout: 15_000 });
 
     // Click History tab
     await clerkPage.locator("nav a", { hasText: "History" }).click();

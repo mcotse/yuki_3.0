@@ -88,32 +88,43 @@ export async function waitForTimeline(page: Page) {
  * Uses aria-label="Confirm" on timeline items and the hero card's "Confirm" button text.
  */
 export async function confirmAllMedications(page: Page) {
-  let maxIterations = 10;
+  // With shared Convex DB, another worker's seedForTest can reset data mid-loop.
+  // Use shorter per-iteration timeout so the loop recovers faster from resets.
+  let maxIterations = 20;
   while (maxIterations > 0) {
     const allClear = page.locator("text=All clear!");
     if (await allClear.isVisible()) break;
+
+    // Track "Done" count before clicking to detect state change
+    const doneBefore = await page.locator("text=Done").count();
 
     // Try timeline inline Confirm buttons first (aria-label="Confirm")
     const timelineConfirm = page.locator('button[aria-label="Confirm"]').first();
     if (await timelineConfirm.isVisible()) {
       await timelineConfirm.click();
-      await page.waitForSelector(
-        'button[aria-label="Confirm"], text="All clear!"',
-        { timeout: 10_000 }
-      );
     } else {
       // Fall back to hero card Confirm button (identified by text)
       const heroConfirm = page.locator("button", { hasText: "Confirm" }).first();
       if (await heroConfirm.isVisible()) {
         await heroConfirm.click();
-        await page.waitForSelector(
-          'button[aria-label="Confirm"], button:has-text("Confirm"), text="All clear!"',
-          { timeout: 10_000 }
-        );
       } else {
         break;
       }
     }
+
+    // Wait for mutation: "Done" count increases or "All clear!" appears.
+    // Short timeout so the loop can retry quickly if shared state resets data.
+    try {
+      await expect(async () => {
+        const allClearNow = await page.locator("text=All clear!").isVisible();
+        if (allClearNow) return;
+        const doneAfter = await page.locator("text=Done").count();
+        expect(doneAfter).toBeGreaterThan(doneBefore);
+      }).toPass({ timeout: 10_000 });
+    } catch {
+      // Mutation may have been reset by another worker's seedForTest — continue loop
+    }
+
     maxIterations--;
   }
 }

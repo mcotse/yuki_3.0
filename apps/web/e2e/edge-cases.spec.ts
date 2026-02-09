@@ -1,4 +1,4 @@
-import { test, expect } from "./helpers";
+import { test, expect, waitForTimeline } from "./helpers";
 
 test.describe("Edge Cases", () => {
   test.beforeEach(async ({ clerkPage }) => {
@@ -35,10 +35,10 @@ test.describe("Edge Cases", () => {
   test("rapid confirm/undo does not crash", async ({ clerkPage }) => {
     await clerkPage.waitForSelector("text=Right Now", { timeout: 15_000 });
 
-    // Confirm a medication
-    await clerkPage.locator("button", { hasText: "Confirm" }).click();
+    // Confirm a medication (hero card button)
+    await clerkPage.locator("button", { hasText: "Confirm" }).first().click();
     await expect(clerkPage.locator("text=/confirmed/i")).toBeVisible({
-      timeout: 5_000,
+      timeout: 10_000,
     });
 
     // Undo it
@@ -48,7 +48,7 @@ test.describe("Edge Cases", () => {
     await clerkPage.waitForTimeout(1000);
 
     // Confirm again — should not crash
-    const confirmButton = clerkPage.locator("button", { hasText: "Confirm" });
+    const confirmButton = clerkPage.locator("button", { hasText: "Confirm" }).first();
     if (await confirmButton.isVisible()) {
       await confirmButton.click();
     }
@@ -80,10 +80,10 @@ test.describe("Edge Cases", () => {
       timeout: 10_000,
     });
 
-    // Settings -> Admin
-    await clerkPage.locator("text=Admin").click();
+    // Settings -> Admin (target the nav link, not the role badge)
+    await clerkPage.locator("nav a", { hasText: "Admin" }).click();
     await clerkPage.waitForURL("**/admin", { timeout: 10_000 });
-    await expect(clerkPage.locator("text=Medications")).toBeVisible({
+    await expect(clerkPage.locator("text=Medications").first()).toBeVisible({
       timeout: 10_000,
     });
 
@@ -115,5 +115,64 @@ test.describe("Edge Cases", () => {
     await expect(
       clerkPage.locator("text=No records for this date.")
     ).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("cannot confirm an already-confirmed medication", async ({ clerkPage }) => {
+    await clerkPage.waitForSelector("text=Right Now", { timeout: 15_000 });
+    await waitForTimeline(clerkPage);
+
+    // Confirm via timeline inline button
+    const firstConfirm = clerkPage.locator('button[aria-label="Confirm"]').first();
+    await firstConfirm.click();
+
+    // Wait for Convex mutation to propagate — "Done" pill should appear
+    await expect(clerkPage.locator("text=Done").first()).toBeVisible({ timeout: 10_000 });
+
+    const doneItems = clerkPage.locator("text=Done");
+    const doneCount = await doneItems.count();
+    expect(doneCount).toBeGreaterThan(0);
+
+    // Each "Done" item should NOT have a Confirm button
+    for (let i = 0; i < doneCount; i++) {
+      const doneItem = doneItems.nth(i).locator("..").locator("..");
+      const confirmBtn = doneItem.locator('button[aria-label="Confirm"]');
+      await expect(confirmBtn).not.toBeVisible();
+    }
+  });
+
+  test("cannot snooze an already-confirmed medication", async ({ clerkPage }) => {
+    await clerkPage.waitForSelector("text=Right Now", { timeout: 15_000 });
+    await waitForTimeline(clerkPage);
+
+    // Confirm a medication first
+    await clerkPage.locator('button[aria-label="Confirm"]').first().click();
+
+    // Wait for Convex mutation to propagate
+    await expect(clerkPage.locator("text=Done").first()).toBeVisible({ timeout: 10_000 });
+
+    // The confirmed item should not show a Snooze button
+    const doneItems = clerkPage.locator("text=Done");
+    const doneCount = await doneItems.count();
+    expect(doneCount).toBeGreaterThan(0);
+
+    for (let i = 0; i < doneCount; i++) {
+      const doneItem = doneItems.nth(i).locator("..").locator("..");
+      const snoozeBtn = doneItem.locator('button[aria-label="Snooze"]');
+      await expect(snoozeBtn).not.toBeVisible();
+    }
+  });
+
+  test("snooze shows Snoozed status pill", async ({ clerkPage }) => {
+    await clerkPage.waitForSelector("text=Right Now", { timeout: 15_000 });
+    await waitForTimeline(clerkPage);
+
+    // Snooze the first item
+    await clerkPage.locator('button[aria-label="Snooze"]').first().click();
+    await clerkPage.locator("text=15 min").click();
+    await expect(clerkPage.locator("text=Snoozed")).toBeVisible({ timeout: 10_000 });
+
+    // The snoozed item should show "Snoozed" pill
+    const snoozedPills = clerkPage.locator("text=Snoozed");
+    expect(await snoozedPills.count()).toBeGreaterThan(0);
   });
 });

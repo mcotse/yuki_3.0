@@ -1,5 +1,5 @@
 import type { MutationCtx } from "./_generated/server";
-import { internalMutation, mutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import { generateDailyInstancesHandler } from "./instances";
 
 export async function seedDemoDataHandler(ctx: MutationCtx) {
@@ -107,37 +107,46 @@ export const seedDemoData = internalMutation({
 });
 
 /**
- * Public seed mutation for E2E testing.
+ * Internal seed mutation for E2E testing.
  * Seeds demo data + resets and regenerates today's instances.
  */
-export const seedForTest = mutation({
+export const seedForTest = internalMutation({
   args: {},
   handler: async (ctx) => {
-    await seedDemoDataHandler(ctx);
-
     const today = new Date().toISOString().split("T")[0];
 
-    // Delete existing instances for today so they can be regenerated fresh
-    const existing = await ctx.db
-      .query("dailyInstances")
-      .withIndex("by_date", (q) => q.eq("date", today))
-      .collect();
-    for (const inst of existing) {
-      await ctx.db.delete(inst._id);
-    }
-
-    // Also clear today's confirmation history (scoped to today's instances only)
-    const instanceIds = new Set(existing.map((inst) => inst._id));
-    for (const instanceId of instanceIds) {
+    // Full reset: delete all instances, history, observations, schedules, items
+    const instances = await ctx.db.query("dailyInstances").collect();
+    for (const inst of instances) {
       const history = await ctx.db
         .query("confirmationHistory")
-        .withIndex("by_instance", (q) => q.eq("instanceId", instanceId))
+        .withIndex("by_instance", (q) => q.eq("instanceId", inst._id))
         .collect();
       for (const h of history) {
         await ctx.db.delete(h._id);
       }
+      await ctx.db.delete(inst._id);
     }
 
+    const schedules = await ctx.db.query("itemSchedules").collect();
+    for (const sched of schedules) {
+      await ctx.db.delete(sched._id);
+    }
+
+    const items = await ctx.db.query("items").collect();
+    for (const item of items) {
+      await ctx.db.delete(item._id);
+    }
+
+    const pets = await ctx.db.query("pets").collect();
+    for (const pet of pets) {
+      await ctx.db.delete(pet._id);
+    }
+
+    // Re-seed fresh demo data
+    await seedDemoDataHandler(ctx);
+
+    // Generate fresh daily instances
     await generateDailyInstancesHandler(ctx, today);
 
     return { ok: true as const, date: today };

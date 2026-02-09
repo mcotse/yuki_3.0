@@ -40,7 +40,7 @@ test.describe("Settings Page (V9)", () => {
     });
 
     // Notifications section should be visible
-    await expect(clerkPage.locator("text=Notifications")).toBeVisible();
+    await expect(clerkPage.getByText("Notifications", { exact: true })).toBeVisible();
   });
 
   test("shows app info", async ({ clerkPage }) => {
@@ -63,5 +63,16 @@ test.describe("Settings Page (V9)", () => {
     await expect(
       clerkPage.locator("button", { hasText: "Sign Out" })
     ).toBeVisible();
+  });
+
+  test("sign out button redirects to login page", async ({ clerkPage }) => {
+    await clerkPage.goto("/settings");
+    await expect(clerkPage.locator("h1", { hasText: "Settings" })).toBeVisible({ timeout: 10_000 });
+
+    // Click sign out
+    await clerkPage.locator("button", { hasText: "Sign Out" }).click();
+
+    // Should redirect to login page
+    await clerkPage.waitForURL(/\/login/, { timeout: 15_000 });
   });
 });
