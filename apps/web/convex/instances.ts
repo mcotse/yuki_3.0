@@ -1,43 +1,49 @@
 import { v } from "convex/values";
+import type { MutationCtx } from "./_generated/server";
 import { internalMutation, query } from "./_generated/server";
+
+export async function generateDailyInstancesHandler(
+  ctx: MutationCtx,
+  date: string,
+) {
+  // Check if instances already exist for this date
+  const existing = await ctx.db
+    .query("dailyInstances")
+    .withIndex("by_date", (q) => q.eq("date", date))
+    .first();
+
+  if (existing) return;
+
+  // Get all active items with their schedules
+  const items = await ctx.db
+    .query("items")
+    .filter((q) => q.eq(q.field("isActive"), true))
+    .collect();
+
+  for (const item of items) {
+    const schedules = await ctx.db
+      .query("itemSchedules")
+      .withIndex("by_item", (q) => q.eq("itemId", item._id))
+      .collect();
+
+    for (const schedule of schedules) {
+      await ctx.db.insert("dailyInstances", {
+        itemId: item._id,
+        scheduleId: schedule._id,
+        petId: item.petId,
+        date,
+        scheduledHour: schedule.scheduledHour,
+        scheduledMinute: schedule.scheduledMinute,
+        status: "pending",
+        isObservation: false,
+      });
+    }
+  }
+}
 
 export const generateDailyInstances = internalMutation({
   args: { date: v.string() },
-  handler: async (ctx, { date }) => {
-    // Check if instances already exist for this date
-    const existing = await ctx.db
-      .query("dailyInstances")
-      .withIndex("by_date", (q) => q.eq("date", date))
-      .first();
-
-    if (existing) return;
-
-    // Get all active items with their schedules
-    const items = await ctx.db
-      .query("items")
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
-
-    for (const item of items) {
-      const schedules = await ctx.db
-        .query("itemSchedules")
-        .withIndex("by_item", (q) => q.eq("itemId", item._id))
-        .collect();
-
-      for (const schedule of schedules) {
-        await ctx.db.insert("dailyInstances", {
-          itemId: item._id,
-          scheduleId: schedule._id,
-          petId: item.petId,
-          date,
-          scheduledHour: schedule.scheduledHour,
-          scheduledMinute: schedule.scheduledMinute,
-          status: "pending",
-          isObservation: false,
-        });
-      }
-    }
-  },
+  handler: async (ctx, { date }) => generateDailyInstancesHandler(ctx, date),
 });
 
 // Enriched instance type for the client
