@@ -11,4 +11,19 @@ test.describe("Authentication", () => {
     await expect(page.locator("h1")).toContainText("Yuki");
     await expect(page.locator("text=Pet medication tracker")).toBeVisible();
   });
+
+  test("accessing admin page without auth redirects to login", async ({ page }) => {
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("accessing history page without auth redirects to login", async ({ page }) => {
+    await page.goto("/history");
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("accessing settings page without auth redirects to login", async ({ page }) => {
+    await page.goto("/settings");
+    await expect(page).toHaveURL(/\/login/);
+  });
 });
