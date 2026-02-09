@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchMutation } from "convex/nextjs";
-import { api } from "@/convex/_generated/api";
+import { internal } from "@/convex/_generated/api";
 
 export async function GET() {
   // Only allow in development/test
@@ -9,7 +9,9 @@ export async function GET() {
   }
 
   try {
-    await fetchMutation(api.seed.seedForTest);
+    // seedForTest is an internalMutation; fetchMutation can invoke it
+    // server-side when CONVEX_DEPLOYMENT is set (admin access).
+    await fetchMutation(internal.seed.seedForTest as any);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(
