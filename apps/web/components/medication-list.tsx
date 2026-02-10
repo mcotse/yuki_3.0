@@ -74,7 +74,7 @@ export function MedicationList({
                 onClick={() => onEdit(item._id)}
                 className="rounded-lg p-2 text-xs text-on-surface-muted active:bg-surface-container transition-colors"
               >
-                \u270E
+                {"\u270E"}
               </button>
             </div>
           </div>

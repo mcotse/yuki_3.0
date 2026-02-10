@@ -86,7 +86,7 @@ export function ScheduleBuilder({
             onClick={() => onRemove(s._id)}
             className="rounded p-1 text-xs text-on-surface-muted active:bg-surface-dim"
           >
-            \u2715
+            {"\u2715"}
           </button>
         </div>
       ))}
