@@ -83,12 +83,12 @@ export default function AdminPage() {
   );
 
   const handleToggleActive = useCallback(
-    async (itemId: Id<"items">, activate: boolean) => {
+    async (itemId: string, activate: boolean) => {
       try {
         if (activate) {
-          await activateMutation({ itemId });
+          await activateMutation({ itemId: itemId as Id<"items"> });
         } else {
-          await deactivateMutation({ itemId });
+          await deactivateMutation({ itemId: itemId as Id<"items"> });
         }
       } catch (error) {
         console.error("Failed to toggle item active state:", error);
