@@ -45,7 +45,7 @@ export function ObservationSheet({
       {/* Sheet */}
       <div
         role="dialog"
-        className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-md rounded-t-2xl bg-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-xl"
+        className="fixed z-50 mx-auto max-w-md bg-surface p-4 shadow-xl bottom-0 left-0 right-0 rounded-t-2xl pb-20 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:pb-4 sm:w-full"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-on-surface">
