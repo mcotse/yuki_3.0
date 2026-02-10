@@ -31,8 +31,8 @@ jobs:
       # Move them aside for the Pages build only.
       - name: Prepare for static export
         run: |
-          mv apps/web/middleware.ts apps/web/middleware.ts.bak
-          mv apps/web/app/api apps/web/app/api.bak
+          mv apps/web/middleware.ts /tmp/middleware.ts.bak
+          mv apps/web/app/api /tmp/api.bak
 
       - name: Build static export
         env:
@@ -46,8 +46,8 @@ jobs:
       - name: Restore moved files
         if: always()
         run: |
-          mv apps/web/middleware.ts.bak apps/web/middleware.ts || true
-          mv apps/web/app/api.bak apps/web/app/api || true
+          mv /tmp/middleware.ts.bak apps/web/middleware.ts || true
+          mv /tmp/api.bak apps/web/app/api || true
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
