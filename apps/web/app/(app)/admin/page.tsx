@@ -97,8 +97,8 @@ export default function AdminPage() {
     [activateMutation, deactivateMutation]
   );
 
-  const handleEdit = useCallback((itemId: Id<"items">) => {
-    setEditingItemId(itemId);
+  const handleEdit = useCallback((itemId: string) => {
+    setEditingItemId(itemId as Id<"items">);
     setView("edit");
   }, []);
 
