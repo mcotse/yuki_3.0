@@ -1,5 +1,9 @@
 import { SignIn } from "@clerk/nextjs";
 
+export function generateStaticParams() {
+  return [{ login: [] }];
+}
+
 export default function LoginPage() {
   return (
     <div className="flex min-h-svh items-center justify-center bg-surface-dim">
