@@ -46,8 +46,8 @@ jobs:
       - name: Restore moved files
         if: always()
         run: |
-          mv apps/web/middleware.ts.bak apps/web/middleware.ts
-          mv apps/web/app/api.bak apps/web/app/api
+          mv apps/web/middleware.ts.bak apps/web/middleware.ts || true
+          mv apps/web/app/api.bak apps/web/app/api || true
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
