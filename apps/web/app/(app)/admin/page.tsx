@@ -122,10 +122,10 @@ export default function AdminPage() {
   );
 
   const handleRemoveSchedule = useCallback(
-    async (scheduleId: Id<"itemSchedules">) => {
+    async (scheduleId: string) => {
       try {
         await removeScheduleMutation({
-          scheduleId,
+          scheduleId: scheduleId as Id<"itemSchedules">,
         });
       } catch (error) {
         console.error("Failed to remove schedule:", error);
